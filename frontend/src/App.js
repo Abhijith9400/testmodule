@@ -10,7 +10,8 @@ function App() {
 
   useEffect(() => {
     setLoadingInterceptor({ showLoading, hideLoading });
-  }, []);
+  }, [showLoading, hideLoading]);  // ✅ Added dependencies here
+  
 
   return (
     <>
@@ -21,4 +22,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 

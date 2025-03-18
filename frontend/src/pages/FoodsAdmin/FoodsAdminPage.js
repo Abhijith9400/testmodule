@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import classes from './foodsAdminPage.module.css';
 import { Link, useParams } from 'react-router-dom';
 import { deleteById, getAll, search } from '../../services/foodService';
@@ -9,20 +9,24 @@ import Price from '../../components/Price/Price';
 import { toast } from 'react-toastify';
 
 export default function FoodsAdminPage() {
-  const [foods, setFoods] = useState();
+  const [foods, setFoods] = useState([]);
   const { searchTerm } = useParams();
+
+  const loadFoods = useCallback(async () => {
+    try {
+      const foods = searchTerm ? await search(searchTerm) : await getAll();
+      setFoods(foods);
+    } catch (error) {
+      console.error("Failed to load foods:", error);
+    }
+  }, [searchTerm]);
 
   useEffect(() => {
     loadFoods();
-  }, [searchTerm]);
-
-  const loadFoods = async () => {
-    const foods = searchTerm ? await search(searchTerm) : await getAll();
-    setFoods(foods);
-  };
+  }, [loadFoods]);
 
   const FoodsNotFound = () => {
-    if (foods && foods.length > 0) return;
+    if (foods && foods.length > 0) return null;
 
     return searchTerm ? (
       <NotFound linkRoute="/admin/foods" linkText="Show All" />
@@ -31,13 +35,18 @@ export default function FoodsAdminPage() {
     );
   };
 
-  const deleteFood = async food => {
+  const deleteFood = async (food) => {
     const confirmed = window.confirm(`Delete Food ${food.name}?`);
     if (!confirmed) return;
 
-    await deleteById(food.id);
-    toast.success(`"${food.name}" Has Been Removed!`);
-    setFoods(foods.filter(f => f.id !== food.id));
+    try {
+      await deleteById(food.id);
+      toast.success(`"${food.name}" Has Been Removed!`);
+      setFoods(prevFoods => prevFoods.filter(f => f.id !== food.id));
+    } catch (error) {
+      toast.error(`Failed to delete "${food.name}".`);
+      console.error("Delete error:", error);
+    }
   };
 
   return (
@@ -54,18 +63,17 @@ export default function FoodsAdminPage() {
           Add Food +
         </Link>
         <FoodsNotFound />
-        {foods &&
-          foods.map(food => (
-            <div key={food.id} className={classes.list_item}>
-              <img src={food.imageUrl} alt={food.name} />
-              <Link to={'/food/' + food.id}>{food.name}</Link>
-              <Price price={food.price} />
-              <div className={classes.actions}>
-                <Link to={'/admin/editFood/' + food.id}>Edit</Link>
-                <Link onClick={() => deleteFood(food)}>Delete</Link>
-              </div>
+        {foods && foods.map(food => (
+          <div key={food.id} className={classes.list_item}>
+            <img src={food.imageUrl} alt={food.name} />
+            <Link to={'/food/' + food.id}>{food.name}</Link>
+            <Price price={food.price} />
+            <div className={classes.actions}>
+              <Link to={'/admin/editFood/' + food.id}>Edit</Link>
+              <button onClick={() => deleteFood(food)}>Delete</button>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
     </div>
   );

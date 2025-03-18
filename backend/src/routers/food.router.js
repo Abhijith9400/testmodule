@@ -37,14 +37,14 @@ router.post(
 );
 
 router.put(
-  '/',
+  '/:id',   // Accept ID as a URL parameter
   admin,
   handler(async (req, res) => {
-    const { id, name, price, tags, favorite, imageUrl, origins, cookTime } =
-      req.body;
+    const { id } = req.params;  // Extract ID from URL
+    const { name, price, tags, favorite, imageUrl, origins, cookTime } = req.body;
 
-    await FoodModel.updateOne(
-      { _id: id },
+    const updatedFood = await FoodModel.findByIdAndUpdate(
+      id,
       {
         name,
         price,
@@ -53,12 +53,18 @@ router.put(
         imageUrl,
         origins: origins.split ? origins.split(',') : origins,
         cookTime,
-      }
+      },
+      { new: true } // Return the updated document
     );
 
-    res.send();
+    if (!updatedFood) {
+      return res.status(404).send('Food not found');
+    }
+
+    res.send(updatedFood);
   })
 );
+
 
 router.delete(
   '/:foodId',

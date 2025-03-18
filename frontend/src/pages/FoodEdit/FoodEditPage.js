@@ -27,27 +27,41 @@ export default function FoodEditPage() {
 
   useEffect(() => {
     if (!isEditMode) return;
-
+  
     getById(foodId).then(food => {
       if (!food) return;
       reset(food);
       setImageUrl(food.imageUrl);
     });
-  }, [foodId]);
-
+  }, [foodId, isEditMode, reset]);  // ✅ Added dependencies here
+  
   const submit = async foodData => {
-    const food = { ...foodData, imageUrl };
-
+    const food = { ...foodData, imageUrl, id: foodId };  // ✅ Ensure `id` is included
+    console.log('Food data being sent for update:', food);
+  
     if (isEditMode) {
-      await update(food);
-      toast.success(`Food "${food.name}" updated successfully!`);
+      try {
+        await update(food);
+        toast.success(`Food "${food.name}" updated successfully!`);
+        navigate('/admin/foods');
+      } catch (err) {
+        toast.error('Failed to update food.');
+        console.error(err);
+      }
       return;
     }
-
-    const newFood = await add(food);
-    toast.success(`Food "${food.name}" added successfully!`);
-    navigate('/admin/editFood/' + newFood.id, { replace: true });
+    
+    try {
+      const newFood = await add(food);
+      toast.success(`Food "${food.name}" added successfully!`);
+      navigate('/admin/editFood/' + newFood.id, { replace: true });
+    } catch (err) {
+      toast.error('Failed to add food.');
+      console.error(err);
+    }
   };
+  
+
 
   const upload = async event => {
     setImageUrl(null);

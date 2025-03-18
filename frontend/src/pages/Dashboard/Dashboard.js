@@ -6,21 +6,26 @@ import { Link } from 'react-router-dom';
 export default function Dashboard() {
   const { user } = useAuth();
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className={classes.container}>
       <div className={classes.menu}>
         {allItems
-          .filter(item => user.isAdmin || !item.forAdmin)
+          .filter(item => user.isAdmin || !item.forAdmin) // Shows admin-specific items if user isAdmin
           .map(item => (
             <Link
               key={item.title}
               to={item.url}
+              className={classes.menuItem}
               style={{
                 backgroundColor: item.bgColor,
                 color: item.color,
               }}
             >
-              <img src={item.imageUrl} alt={item.title} />
+              <img src={item.imageUrl} alt={item.title} className={classes.icon} />
               <h2>{item.title}</h2>
             </Link>
           ))}

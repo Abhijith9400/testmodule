@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-const router = Router();
-import { BAD_REQUEST } from '../constants/httpStatus.js';
+import bcrypt from 'bcryptjs';
 import handler from 'express-async-handler';
 import { UserModel } from '../models/user.model.js';
-import bcrypt from 'bcryptjs';
 import auth from '../middleware/auth.mid.js';
-import admin from '../middleware/admin.mid.js';
+
+const router = Router();
 const PASSWORD_HASH_SALT_ROUNDS = 10;
 
+// Login Route
 router.post(
   '/login',
   handler(async (req, res) => {
@@ -16,18 +16,21 @@ router.post(
     const user = await UserModel.findOne({ email });
 
     if (user && (await bcrypt.compare(password, user.password))) {
+      console.log(`User Login Successful: ${user.email} | isAdmin: ${user.isAdmin}`);
       res.send(generateTokenResponse(user));
       return;
     }
 
+    console.log(`User Login Failed for email: ${email}`);
     res.status(BAD_REQUEST).send('Username or password is invalid');
   })
 );
 
+// Register Route
 router.post(
   '/register',
   handler(async (req, res) => {
-    const { name, email, password, address } = req.body;
+    const { name, email, password, address, isAdmin = false } = req.body;
 
     const user = await UserModel.findOne({ email });
 
@@ -36,23 +39,22 @@ router.post(
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(
-      password,
-      PASSWORD_HASH_SALT_ROUNDS
-    );
+    const hashedPassword = await bcrypt.hash(password, PASSWORD_HASH_SALT_ROUNDS);
 
-    const newUser = {
+    const newUser = await UserModel.create({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
       address,
-    };
+      isAdmin
+    });
 
-    const result = await UserModel.create(newUser);
-    res.send(generateTokenResponse(result));
+    console.log(`User Registered: ${newUser.email} | isAdmin: ${newUser.isAdmin}`);
+    res.send(generateTokenResponse(newUser));
   })
 );
 
+// Update Profile Route
 router.put(
   '/updateProfile',
   auth,
@@ -64,10 +66,12 @@ router.put(
       { new: true }
     );
 
+    console.log(`User Profile Updated: ${user.email}`);
     res.send(generateTokenResponse(user));
   })
 );
 
+// Change Password Route
 router.put(
   '/changePassword',
   auth,
@@ -90,70 +94,12 @@ router.put(
     user.password = await bcrypt.hash(newPassword, PASSWORD_HASH_SALT_ROUNDS);
     await user.save();
 
-    res.send();
+    console.log(`Password Changed Successfully for user: ${user.email}`);
+    res.send('Password changed successfully');
   })
 );
 
-router.get(
-  '/getall/:searchTerm?',
-  admin,
-  handler(async (req, res) => {
-    const { searchTerm } = req.params;
-
-    const filter = searchTerm
-      ? { name: { $regex: new RegExp(searchTerm, 'i') } }
-      : {};
-
-    const users = await UserModel.find(filter, { password: 0 });
-    res.send(users);
-  })
-);
-
-router.put(
-  '/toggleBlock/:userId',
-  admin,
-  handler(async (req, res) => {
-    const { userId } = req.params;
-
-    if (userId === req.user.id) {
-      res.status(BAD_REQUEST).send("Can't block yourself!");
-      return;
-    }
-
-    const user = await UserModel.findById(userId);
-    user.isBlocked = !user.isBlocked;
-    user.save();
-
-    res.send(user.isBlocked);
-  })
-);
-
-router.get(
-  '/getById/:userId',
-  admin,
-  handler(async (req, res) => {
-    const { userId } = req.params;
-    const user = await UserModel.findById(userId, { password: 0 });
-    res.send(user);
-  })
-);
-
-router.put(
-  '/update',
-  admin,
-  handler(async (req, res) => {
-    const { id, name, email, address, isAdmin } = req.body;
-    await UserModel.findByIdAndUpdate(id, {
-      name,
-      email,
-      address,
-      isAdmin,
-    });
-
-    res.send();
-  })
-);
-
+// Generate Token Response
 const generateTokenResponse = user => {
   const token = jwt.sign(
     {
@@ -162,9 +108,7 @@ const generateTokenResponse = user => {
       isAdmin: user.isAdmin,
     },
     process.env.JWT_SECRET,
-    {
-      expiresIn: '30d',
-    }
+    { expiresIn: '30d' }
   );
 
   return {

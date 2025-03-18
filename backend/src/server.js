@@ -8,9 +8,11 @@ import userRouter from './routers/user.router.js';
 import orderRouter from './routers/order.router.js';
 import uploadRouter from './routers/upload.router.js';
 
+
 import { dbconnect } from './config/database.config.js';  // Use this if it's a named export
 import path, { dirname } from 'path';
 console.log('ENV LOADED, MONGO_URI:', process.env.MONGO_URI);
+
 
 // Connect to the database
 dbconnect();
@@ -38,10 +40,14 @@ const publicFolder = path.join(__dirname, 'public');
 app.use(express.static(publicFolder));
 
 // Handle React's client-side routing by serving index.html for unmatched routes
-app.get('*', (req, res) => {
-  const indexFilePath = path.join(publicFolder, 'index.html');
-  res.sendFile(indexFilePath);
-});
+app.get('/api/admin/dashboard', async (req, res) => {
+  try {
+      const data = await YourModel.find(); // Fetch data from your collection
+      res.status(200).json(data);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}); 
 
 // Start the server
 const PORT = process.env.PORT || 5000;

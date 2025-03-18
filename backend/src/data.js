@@ -96,7 +96,7 @@ export const sample_users = [
     email: 'abhijith@gmail.com',
     password: '$2a$10$ijTRi9TPcoksDFu3KUSAw.XCYR3mvXd9BhF7m6yAD96B2p87F.cNK',
     address: 'fnffmahjbadjkbfkjefenfk',
-    isAdmin: false,
+    isAdmin: true,
     createdAt: '2024-04-12T14:49:31.162+00:00',
     updatedAt: '2024-04-12T14:49:31.162+00:00',
   },
@@ -106,7 +106,7 @@ export const sample_users = [
     email: 'admin@gmail.com',
     password: '$2a$10$ijTRi9TPcoksDFu3KUSAw.XCYR3mvXd9BhF7m6yAD96B2p87F.cNK', // bcrypt hashed password for "12345"
     address: 'Admin Street 123, Canteen City',
-    isAdmin: true,
+    isAdmin: true,  // Important!
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

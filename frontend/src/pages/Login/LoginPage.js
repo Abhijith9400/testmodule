@@ -7,6 +7,7 @@ import Title from '../../components/Title/Title';
 import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
 import { EMAIL } from '../../constants/patterns';
+
 export default function LoginPage() {
   const {
     handleSubmit,
@@ -20,10 +21,10 @@ export default function LoginPage() {
   const returnUrl = params.get('returnUrl');
 
   useEffect(() => {
-    if (!user) return;
-
-    returnUrl ? navigate(returnUrl) : navigate('/');
-  }, [user]);
+    if (user && user.token) {  // Only navigate if the user is properly logged in
+      returnUrl ? navigate(returnUrl) : navigate('/');
+    }
+  }, [user, returnUrl, navigate]);
 
   const submit = async ({ email, password }) => {
     await login(email, password);
@@ -56,9 +57,9 @@ export default function LoginPage() {
           <Button type="submit" text="Login" />
 
           <div className={classes.register}>
-           &nbsp;
+            &nbsp;
             <Link to={`/register${returnUrl ? '?returnUrl=' + returnUrl : ''}`}>
-              
+              Don't have an account? Register here.
             </Link>
           </div>
         </form>
